@@ -1,0 +1,9 @@
+flake8
+flask
+mwapi
+mwoauth
+pytest
+mypy==0.670
+pyyaml
+requests_oauthlib
+toolforge
