@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block main %}
+    {% include "search_bar.html" %}
+    {% for word in words %}
+        <div class="row lexeme"><div class="col">
+            <div class="row top_info"><div class="col">
+                <h1>{{ word.lemma }}</h1>
+            </div></div>
+            <div class="row info_bar">
+                <div class="col">{{ word.pos }}</div>
+                <div class="col text-right"><a href="http://wikidata.org/wiki/Lexeme:{{ word.id }}" target="_blank">[{{ word.id }}]</a></div>
+            </div>
+            <div class="row">
+                <div class="col forms">
+                    {% if word.derived_from or word.derivations%}
+                        <h3>Related</h3>
+                        {% if word.derived_from %}
+                            {% for der in word.derived_from %}
+                                <p><strong>Derived from</strong> <a href="{{ url_for('display', lang=lang, word=der) }}">{{ der }}</a></p>
+                            {% endfor %}{% endif %}
+                            {% if word.derivations %}
+                                {% for der in word.derivations %}
+                                    <p><strong>Derivations</strong> <a href="{{ url_for('display', lang=lang, word=der) }}">{{ der }}</a></p>
+                                {% endfor %}
+                            {% endif %}
+                        {% endif %}
+                        {% if word.combines or word.compounds %}
+                            <h3>Compounds</h3>
+                        {% endif %}
+                        {% if word.combines %}
+                            <h4>Combines</h4> <ul>{% for part in word.combines %}
+                                <a href="{{ url_for('display', lang=lang, word=part.value_.value) }}">{{ part.value_.value }}</a>{% if not loop.last %}, {% endif %}
+                            {% endfor %}</ul>{% endif %}
+                            {% if word.compounds %}
+                                <h4>In compounds</h4> <ul>{% for part in word.compounds|sort %}
+                                    <a href="{{ url_for('display', lang=lang, word=part) }}">{{ part }}</a></li>{% if not loop.last %}, {% endif %}
+                                {% endfor %}</ul>
+                            {% endif %}
+                            
+                            <h3>Forms</h3>
+                            <h4>Tagged forms</h4><ul>
+                                {% for form in word.forms %}
+                                    {% if form.features|length > 0 %}
+                                        <li><span class="features">
+                                            {% for feature in form.features %}
+                                                {{ feature }}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}:</span> {{ form.value }}</li>
+                                        {% endif %}
+                                    {% endfor %}</ul>
+                                    <h4>Untagged forms</h4>
+                                    {% for form in word.forms %}
+                                        {% if form.features|length == 0 %}
+                                            <li>{{ form.value }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="col meat">
+                                    <h3>Senses</h3>
+                                    <ul>
+                                        {% for gloss in word.glosses %}
+                                            <li>{% if gloss.notes %}<span class="gloss_note">{{ gloss.notes }}</span> {% endif %}{{ gloss.gloss }}</li>
+                                            {% for example in gloss.examples %}
+                                                {% include 'usage_example.html' %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                    {% if word.examples %}
+                                        <h3>Examples (not attached to a Sense)</h3>
+                                        <ul>
+                                            {% for example in word.examples %}
+                                                {% include 'usage_example.html' %}
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </div></div>
+                            </div></div>
+                        {% endfor %}
+                    {% endblock %}

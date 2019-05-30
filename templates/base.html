@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% block head %}
+      <meta charset="utf-8">
+    <title>{% block title %}Hauki{% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://tools-static.wmflabs.org/cdnjs/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
+    <script type=text/javascript>
+    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    </script>
+    <script src="https://tools-static.wmflabs.org/cdnjs/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://tools-static.wmflabs.org/cdnjs/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+    <script src="https://tools-static.wmflabs.org/cdnjs/ajax/libs/typeahead.js/0.11.1/typeahead.bundle.min.js"></script>
+    <script src="{{ url_for('static',filename='js/hauki.js') }}"></script>
+  {% endblock head %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-sm">
+    <div class="container mt-3 navbar-content">
+    <a href="{{ url_for('index') }}"><span class="navbar-title">Hauki</span></a>
+    <ul class="navbar-nav mr-auto">
+      <li><a href="{{ url_for('language_browser') }}" class="nav-link">Browse</a></li>
+    </ul>
+    {{ authentication_area() }}</div>
+  </nav>
+  <main class="container mt-3">
+    {% block main %}
+    {% endblock main %}
+  </main>
+  <footer class="container mt-3">
+  <hr class="my-4">
+  <p>Made by <a href="https://www.wikidata.org/wiki/User:Vesihiisi">Alicia Fagerving</a> using <a href="https://github.com/lucaswerkmeister/cookiecutter-toolforge">cookiecutter-toolforge</a>.</p>
+  <p><strong>Hauki</strong> is a free software available under a GNU General Public License 3.0. Content from <a href="https://wikidata.org">Wikidata</a> is CC0.</p>
+  <p><a href="https://www.wikidata.org/wiki/User:Vesihiisi/Hauki">Documentation</a> • <a href="https://github.com/Vesihiisi/Hauki">Source code</a> • <a href="https://github.com/Vesihiisi/Hauki/issues">Report issue</a></p>
+  </footer>
+</body>
+</html>

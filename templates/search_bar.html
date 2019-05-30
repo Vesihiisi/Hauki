@@ -1,0 +1,16 @@
+{% block search_bar %}
+    <form class="search_form form-inline justify-content-center">
+        <div class="form-group">
+        <select class="form-control" id="language-selector">
+            {% for l in languages %}
+                <option data-code="{{ l.languageCode.value }}"
+                    {% if lang == l.languageCode.value %}
+                        selected
+                    {% endif %}
+                >{{ l.languageLabel.value }}</option>
+            {% endfor %}
+        </select></div>
+            <div class="form-group w-50"><input class="form-control typeahead" type="text" placeholder="Search lexemes…" id="lexeme-searchbox" aria-label="Search"></div>
+        <div class="form-group"><button class="btn" type="button" id="search-button">Search</button></div>
+    </form>
+{% endblock %}
