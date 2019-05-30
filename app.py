@@ -301,12 +301,6 @@ def language_browser(lang):
                                  lang=lang, languages=languages)
 
 
-@app.route('/greet')
-def greet():
-    languages = run_sparql(get_query("get_all_languages"))
-    return flask.render_template('greet.html', languages=languages)
-
-
 @app.route('/autocomplete')
 def autocomplete():
     searchfor = flask.request.args.get('query', default="", type=str)
