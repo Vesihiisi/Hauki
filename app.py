@@ -216,7 +216,8 @@ def construct_forms(raw_forms):
 
 
 def construct_word(lang, raw_word, word_forms, l_id):
-    word = {"lemma": "", "pos": "", "glosses": [], "examples": [], "id": ""}
+    word = {"lemma": "", "pos": "", "gender": "",
+            "glosses": [], "examples": [], "id": ""}
     word["lemma"] = [x["value_"]["value"]
                      for x in raw_word
                      if x["description"]["value"] == "Lemma"][0]
@@ -243,6 +244,10 @@ def construct_word(lang, raw_word, word_forms, l_id):
                            for x in raw_word if
                            x["description"]["value"] == "Derivations" and
                            x.get("value_")]
+    word["gender"] = [x["value_"]["value"]
+                      for x in raw_word if
+                      x["description"]["value"] == "Grammatical gender" and
+                      x.get("value_")]
     word["forms_template"] = "forms_{}_{}".format(lang, word["pos"])
     return word
 
