@@ -1,0 +1,119 @@
+SELECT
+?description
+(?valueLabel AS ?value_) ?value_Url
+?source ?sourceLabel ?demonstratesSense ?note
+WHERE {
+VALUES ?lexeme { wd:%s }
+{
+BIND("Lemma" AS ?description)
+?lexeme wikibase:lemma ?value .
+BIND(?value AS ?valueLabel)
+}
+UNION 
+{
+BIND("Language" AS ?description)
+?lexeme dct:language ?value .
+?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = 'en')
+BIND(CONCAT("language/", SUBSTR(STR(?value), 32))  AS ?value_Url)
+}
+UNION 
+{
+BIND("Lexical category" AS ?description)
+?lexeme wikibase:lexicalCategory ?value .
+?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = 'en')
+BIND(CONCAT("lexical-category/", SUBSTR(STR(?value), 32))  AS ?value_Url)
+}
+UNION 
+{
+BIND("Instance of" AS ?description)
+?lexeme wdt:P31 ?value .
+?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = 'en')
+BIND(CONCAT("property/P31/value/", SUBSTR(STR(?value), 32))  AS ?value_Url)
+}
+UNION 
+{
+BIND("Grammatical gender" AS ?description)
+?lexeme wdt:P5185 ?value .
+?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = 'en')
+}
+UNION 
+{
+BIND("Conjugation class" AS ?description)
+?lexeme wdt:P5186 ?value .
+?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = "en")
+}
+UNION 
+{
+BIND("Compound" AS ?description)
+wd:L45268 wdt:P5238+ ?value .
+?value wikibase:lemma ?valueLabel .
+BIND(SUBSTR(STR(?value), 32)  AS ?value_Url)
+}
+UNION 
+{
+BIND("Usage example" AS ?description)
+?lexeme p:P5831 ?value_statement .
+?value_statement ps:P5831 ?value .
+BIND(?value AS ?valueLabel)
+OPTIONAL {
+?value_statement pq:P6072 ?demonstrated.
+BIND(SUBSTR(STR(?demonstrated), 32) as ?demonstratesSense)
+}
+OPTIONAL {
+?value_statement prov:wasDerivedFrom / pr:P248 ?sourceItem .
+BIND(SUBSTR(STR(?sourceItem), 32)  AS ?source)
+?sourceItem wdt:P1476 ?sourceLabel .
+?sourceItem wdt:P577 ?publDate.
+BIND(str(YEAR(?publDate)) AS ?note)
+}   
+}
+UNION
+{
+BIND("Gloss" AS ?description)
+?lexeme ontolex:sense ?sense .
+?sense skos:definition ?gloss .
+OPTIONAL {
+?sense wdt:P6191 ?style.
+?style rdfs:label ?styleLabel .
+FILTER (LANG(?styleLabel) = 'en')
+BIND (?styleLabel as ?note)
+}
+BIND(SUBSTR(STR(?sense), 32) AS ?value_Url)
+BIND(?gloss AS ?valueLabel) 
+}
+UNION
+{
+BIND("Combines" AS ?description)
+OPTIONAL {
+?lexeme wdt:P5238 ?value .
+?value wikibase:lemma ?valueLabel .      
+}
+BIND(SUBSTR(STR(?value), 32)  AS ?value_Url)
+}
+UNION
+{
+BIND("In compound" AS ?description)
+?other wdt:P5238 wd:%s.
+?other wikibase:lemma ?otherLemma
+BIND(?otherLemma as ?valueLabel)
+}
+UNION   {
+BIND("Derived from" AS ?description)
+OPTIONAL {
+?lexeme wdt:P5191 ?value .
+?value wikibase:lemma ?valueLabel .    
+}
+BIND(SUBSTR(STR(?value), 32)  AS ?value_Url)
+}
+UNION       {
+BIND("Derivations" AS ?description)
+?other wdt:P5191 wd:%s.
+?other wikibase:lemma ?otherLemma
+BIND(?otherLemma as ?valueLabel)
+}
+}
