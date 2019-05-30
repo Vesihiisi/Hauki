@@ -4,7 +4,6 @@ mwapi
 mwoauth
 mypy==0.670
 pytest
-pyyaml
 PyYAML==3.13
 requests
 requests_oauthlib

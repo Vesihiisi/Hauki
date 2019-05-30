@@ -1,5 +1,13 @@
 $(document).ready(function() {
 
+    function runLocally() {
+        if (location.hostname == "localhost" || location.hostname == "127.0.0.1") {
+            return true
+        } else {
+            return false
+        }
+    }
+
     function getSelectedLanguage() {
         return $("#language-selector option:selected").attr('data-code')
     }
@@ -7,6 +15,7 @@ $(document).ready(function() {
     function getSearchQuery() {
         return $("#lexeme-searchbox").val()
     }
+
 
     function executeSearch() {
         language = getSelectedLanguage()
@@ -17,7 +26,7 @@ $(document).ready(function() {
 
     var engine = new Bloodhound({
         remote: {
-            url: '/autocomplete',
+            url: $SCRIPT_ROOT + '/autocomplete',
             wildcard: '*',
             limit: 20,
             prepare: function(query, settings) {
@@ -25,7 +34,6 @@ $(document).ready(function() {
                 return settings;
             },
             transform: function(response) {
-                console.log(response)
                 return response;
             }
         },
@@ -41,13 +49,12 @@ $(document).ready(function() {
 
     $("#search-button").click(function() {
         if ($("#lexeme-searchbox").val()) {
-                    executeSearch()
+            executeSearch()
         }
     });
 
-    $("#lexeme-searchbox").keypress(function(e){
-        console.log($(this).val())
-        if(e.which == 13 && $(this).val()){
+    $("#lexeme-searchbox").keypress(function(e) {
+        if (e.which == 13 && $(this).val()) {
             $('#search-button').click();
         }
     });
