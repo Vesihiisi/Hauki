@@ -1,0 +1,6 @@
+{% block usage_example %}
+    <p class="citation">
+        {% if example.year %}<strong>{{ example.year }}</strong>: {% endif %}
+        <em>{{ example.value }}</em><br>
+        {% if example.title %}[<a href="http://wikidata.org/wiki/{{ example.source_id }}" target="_blank">{{ example.title }}</a>]{% endif %}</p>
+    {% endblock %}

@@ -1,0 +1,14 @@
+SELECT ?languageLabel ?number_of_lexemes ?languageCode
+WITH {SELECT ?language (COUNT(?l) AS ?number_of_lexemes) WHERE {
+?l a ontolex:LexicalEntry ;
+dct:language ?language ;
+}
+GROUP BY ?language }
+AS %languages
+WHERE {
+INCLUDE %languages
+SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+?language wdt:P424 ?languageCode.
+}
+ORDER BY DESC(?number_of_lexemes)
+LIMIT 50

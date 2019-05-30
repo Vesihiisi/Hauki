@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block main %}
+{% include 'search_bar.html' %}
+{% if navigation.previous %}
+<span class="float-left"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.previous }}" ><< previous</a></span>
+{% endif %}
+<span class="float-right"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.next }}" >next >></a></span>
+<div class="three-columns">
+<ul>
+{% for word in words %}
+<li><a href="{{ url_for('display', lang=lang, word=word) }}">{{ word }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
+</div>

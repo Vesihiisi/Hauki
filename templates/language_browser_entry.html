@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Browse a language</h1>
+{% include 'search_bar.html' %}
+<div class="three-columns">
+<ul>
+{% for l in languages %}
+      <li><a href="{{ url_for('language_browser', lang=l.languageCode.value) }}"> {{ l.languageLabel.value }} ({{ l.number_of_lexemes.value }})</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
+</div>

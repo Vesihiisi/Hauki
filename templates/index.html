@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block main %}<div class="jumbotron"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Esox_lucius_Linnaeus_1758_Fig_164_%28Matschie_et_al._1909%29.svg/640px-Esox_lucius_Linnaeus_1758_Fig_164_%28Matschie_et_al._1909%29.svg.png" class="img-fluid float-right"><h1 class="display-4">Hauki</h1>  
+  <p class="lead">Delivers Wikidata lexemes into your eyes.</p>
+  <hr class="my-4">
+  <p>Search for a lexeme (e.g. <a href="{{ url_for('display', lang='en', word='Wikipedian') }}">Wikipedian<sup>[EN]</sup></a>, <a href="{{ url_for('display', lang='sv', word='hen') }}">hen<sup>[SV]</sup></a> or <a href="{{ url_for('display', lang='fi', word='hauki') }}">hauki<sup>[FI]</sup></a>), or <a href="{{ url_for('language_browser') }}">select a language to browse</a>.</p>
+  {% include "search_bar.html" %}
+  <hr class="my-4">
+  <h3>Top 20 languages with most lexemes</h3>
+  <div class="three-columns">
+  <ul>
+    {% for l in languages[:20] %}
+      <li> <a href="{{ url_for('language_browser', lang=l.languageCode.value) }}"> {{ l.languageLabel.value }} ({{ l.number_of_lexemes.value }})</a></li>
+    {% endfor %}
+  </ul></div>
+</div>
+{% endblock %}
