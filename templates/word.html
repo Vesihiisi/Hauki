@@ -7,7 +7,13 @@
                 <h1>{{ word.lemma }}</h1>
             </div></div>
             <div class="row info_bar">
-                <div class="col">{{ word.pos }}
+                <div class="col">{% if word.pos %}{% for p in word.pos %}
+                    {% if not p.label %}
+                    <a href="https://wikidata.org/wiki/{{ p.qid }}">{{ p.qid}}</a>
+                    {% else %}
+                    {{ p.label }}
+                    {% endif %}
+                    {% if not loop.last %} • {% endif %}{% endfor %}{% endif %}
                     {% if word.gender %} • {% for g in word.gender %}{{ g }}{% if not loop.last %} • {% endif %}{% endfor %}{% endif %}
                 </div>
                 <div class="col text-right"><a href="http://wikidata.org/wiki/Lexeme:{{ word.id }}" target="_blank">[{{ word.id }}]</a></div>

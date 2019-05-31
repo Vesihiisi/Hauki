@@ -215,6 +215,20 @@ def construct_forms(raw_forms):
     return forms
 
 
+def construct_pos(raw_word):
+    pos_list = []
+    raw_pos = [x for x in raw_word if x["description"]
+               ["value"] == "Lexical category"]
+    for rp in raw_pos:
+        qid = rp["value_Url"]["value"]
+        if rp.get("value_"):
+            pos = {"label": rp["value_"]["value"], "qid": qid}
+        else:
+            pos = {"qid": qid, "label": ""}
+        pos_list.append(pos)
+    return pos_list
+
+
 def construct_word(lang, raw_word, word_forms, l_id):
     word = {"lemma": "", "pos": "", "gender": "",
             "glosses": [], "examples": [], "id": ""}
@@ -224,9 +238,7 @@ def construct_word(lang, raw_word, word_forms, l_id):
     word["examples"] = construct_examples(raw_word)
     word["glosses"] = construct_glosses(lang, raw_word)
     word["id"] = l_id
-    word["pos"] = [x["value_"]["value"]
-                   for x in raw_word
-                   if x["description"]["value"] == "Lexical category"][0]
+    word["pos"] = construct_pos(raw_word)
     word["forms"] = construct_forms(word_forms)
     word["combines"] = [
         x for x in raw_word

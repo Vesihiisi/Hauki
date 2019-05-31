@@ -21,9 +21,9 @@ UNION
 {
 BIND("Lexical category" AS ?description)
 ?lexeme wikibase:lexicalCategory ?value .
-?value rdfs:label ?valueLabel .
-FILTER (LANG(?valueLabel) = 'en')
-BIND(CONCAT("lexical-category/", SUBSTR(STR(?value), 32))  AS ?value_Url)
+BIND(SUBSTR(STR(?value), 32)  AS ?value_Url)
+OPTIONAL {?value rdfs:label ?valueLabel .
+FILTER (LANG(?valueLabel) = 'en')}
 }
 UNION 
 {
