@@ -220,10 +220,11 @@ def construct_pos(raw_word):
     raw_pos = [x for x in raw_word if x["description"]
                ["value"] == "Lexical category"]
     for rp in raw_pos:
+        qid = rp["value_Url"]["value"]
         if rp.get("value_"):
-            pos = rp["value_"]["value"]
+            pos = {"label": rp["value_"]["value"], "qid": qid}
         else:
-            pos = rp["value_Url"]["value"]
+            pos = {"qid": qid, "label": ""}
         pos_list.append(pos)
     return pos_list
 
