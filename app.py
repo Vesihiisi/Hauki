@@ -387,7 +387,7 @@ def edit_summary(content):
 
 def add_new_sense():
     token = flask.session.pop('csrf_token', None)
-    req_data = json.loads(flask.request.data)
+    req_data = json.loads(flask.request.data.decode())
     if (not token or
         token != req_data.get('token') or
             not flask.request.referrer.startswith(full_url('index'))):
