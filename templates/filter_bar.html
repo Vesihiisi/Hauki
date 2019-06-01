@@ -1,0 +1,15 @@
+<div class="filter_bar"><h4>Filter</h4>
+<form class="form-inline ">
+    <div class="form-group">
+<div class="form-check form-check-inline">
+  <input class="form-check-input filter-bar-check" type="checkbox" id="with-senses" value="with-senses" {% if sense == 'true' or sense == 'all'%}checked{% endif %}>
+  <label class="form-check-label" for="with-senses">With senses ({{ lang }})</label>
+</div>
+<div class="form-check form-check-inline">
+  <input class="form-check-input filter-bar-check" type="checkbox" id="without-senses" value="without-senses" {% if sense == 'false' or sense == 'all'%}checked{% endif %}>
+  <label class="form-check-label" for="without-senses">Without senses ({{ lang }})</label>
+</div>
+    <label class="form-check-label">
+        <a href="" id="filter-button" class="btn btn-primary">✓Filter</a>
+    </label>
+</form></div>
