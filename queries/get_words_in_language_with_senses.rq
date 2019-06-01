@@ -1,0 +1,11 @@
+SELECT DISTINCT ?lemma WHERE {
+?l a ontolex:LexicalEntry ; dct:language ?language ;
+wikibase:lemma ?lemma .
+?language wdt:P218 '%s'.
+?l ontolex:sense ?sense .
+?sense skos:definition ?gloss.
+FILTER ( lang(?gloss) = '%s' )
+}
+ORDER BY LCASE(?lemma)
+OFFSET %d
+LIMIT %d
