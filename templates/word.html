@@ -9,9 +9,9 @@
             <div class="row info_bar">
                 <div class="col">{% if word.pos %}{% for p in word.pos %}
                     {% if not p.label %}
-                    <a href="https://wikidata.org/wiki/{{ p.qid }}">{{ p.qid}}</a>
+                        <a href="https://wikidata.org/wiki/{{ p.qid }}">{{ p.qid}}</a>
                     {% else %}
-                    {{ p.label }}
+                        {{ p.label }}
                     {% endif %}
                     {% if not loop.last %} • {% endif %}{% endfor %}{% endif %}
                     {% if word.gender %} • {% for g in word.gender %}{{ g }}{% if not loop.last %} • {% endif %}{% endfor %}{% endif %}
@@ -63,15 +63,18 @@
                                     {% endfor %}
                                 </div>
                                 <div class="col meat">
-                                    <h3>Senses</h3>
-                                    <ul>
-                                        {% for gloss in word.glosses %}
-                                            <li>{% if gloss.notes %}<span class="gloss_note">{{ gloss.notes }}</span> {% endif %}{{ gloss.gloss }}</li>
-                                            {% for example in gloss.examples %}
-                                                {% include 'usage_example.html' %}
+                                    <h3>Senses</h3><form method="post" class="edit-form">
+                                        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+                                        <ul>
+                                            {% for gloss in word.glosses %}
+                                                <li>{% if gloss.notes %}<span class="gloss_note">{{ gloss.notes }}</span> {% endif %}{{ gloss.gloss }}</li>
+                                                {% for example in gloss.examples %}
+                                                    {% include 'usage_example.html' %}
+                                                {% endfor %}
                                             {% endfor %}
-                                        {% endfor %}
-                                    </ul>
+                                        </ul>
+                                        {% if authenticated %}<button type="button" class="btn btn-primary add-sense-button" data-lid="{{ word.id }}", data-lang="{{ lang }}", data-language="{{ word.language }}">Add a sense!</button>{% endif %}
+                                    </form>
                                     {% if word.examples %}
                                         <h3>Examples (not attached to a Sense)</h3>
                                         <ul>

@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block main %}
 {% include 'search_bar.html' %}
+{% include 'filter_bar.html' %}
+</div>
 {% if navigation.previous %}
-<span class="float-left"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.previous }}" ><< previous</a></span>
+<span class="float-left"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.previous }}{% if sense == 'false' or sense == 'true' %}&sense={{ sense }}{% endif %}" ><< previous</a></span>
 {% endif %}
-<span class="float-right"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.next }}" >next >></a></span>
+<span class="float-right"><a href="{{ url_for('language_browser', lang=lang) }}?from={{ navigation.next }}{% if sense == 'false' or sense == 'true' %}&sense={{ sense }}{% endif %}" >next >></a></span>
 <div class="three-columns">
 <ul>
 {% for word in words %}
