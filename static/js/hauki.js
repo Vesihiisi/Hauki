@@ -62,7 +62,7 @@ $(document).ready(function() {
         if (runLocally()) {
             var url = "http://127.0.0.1:5000" + window.location.pathname
         } else {
-            var url = window.location.hostname + window.location.pathname
+            var url = "http://" + window.location.hostname + window.location.pathname
         }
         var filterButton = $("#filter-button")
         var withSenses = $("#with-senses").is(":checked")
