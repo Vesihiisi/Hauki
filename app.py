@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import flask
+import json
 import mwapi  # type: ignore
 import mwoauth  # type: ignore
 import os
@@ -14,6 +15,7 @@ import yaml
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 QUERIES = "queries"
+HASHTAG = "#Hauki"
 
 sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
 
@@ -38,6 +40,19 @@ if 'oauth' in app.config:
     consumer_token = mwoauth.ConsumerToken(oauth_config['consumer_key'],
                                            oauth_config['consumer_secret'])
     index_php = 'https://www.wikidata.org/w/index.php'
+
+
+def if_needs_oauth_redirect():
+    if 'oauth' in app.config and 'oauth_access_token' not in flask.session:
+        (redirect, request_token) = mwoauth.initiate(
+            'https://www.wikidata.org/w/index.php', consumer_token,
+            user_agent=user_agent)
+        flask.session['oauth_request_token'] = dict(
+            zip(request_token._fields, request_token))
+        flask.session['oauth_redirect_target'] = current_url()
+        return flask.redirect(redirect)
+    else:
+        return None
 
 
 @app.template_global()
@@ -134,8 +149,15 @@ def index() -> str:
     return flask.render_template('index.html', languages=languages)
 
 
-def get_words_in_language(lang, offset=0, limit=100):
-    query = get_query("get_words_in_language") % (lang, offset, limit)
+def get_words_in_language(lang, sense, offset=0, limit=100):
+    if sense == "false":
+        query = get_query("get_words_in_language_without_senses") % (
+            lang, lang, offset, limit)
+    elif sense == "true":
+        query = get_query("get_words_in_language_with_senses") % (
+            lang, lang, offset, limit)
+    else:
+        query = get_query("get_words_in_language") % (lang, offset, limit)
     results = run_sparql(query)
     return [x["lemma"]["value"] for x in results]
 
@@ -148,7 +170,8 @@ def get_word(lexeme_id):
 def show_word_page(words, lang, languages):
     return flask.render_template('word.html',
                                  words=words, lang=lang,
-                                 languages=languages)
+                                 languages=languages,
+                                 authenticated=authenticated_session())
 
 
 def construct_glosses(lang, raw_word):
@@ -230,7 +253,7 @@ def construct_pos(raw_word):
 
 
 def construct_word(lang, raw_word, word_forms, l_id):
-    word = {"lemma": "", "pos": "", "gender": "",
+    word = {"lemma": "", "pos": "", "gender": "", "language": "",
             "glosses": [], "examples": [], "id": ""}
     word["lemma"] = [x["value_"]["value"]
                      for x in raw_word
@@ -238,6 +261,8 @@ def construct_word(lang, raw_word, word_forms, l_id):
     word["examples"] = construct_examples(raw_word)
     word["glosses"] = construct_glosses(lang, raw_word)
     word["id"] = l_id
+    word["language"] = [x["value_"]["value"] for x in raw_word if x["description"]
+                        ["value"] == "Language"][0]
     word["pos"] = construct_pos(raw_word)
     word["forms"] = construct_forms(word_forms)
     word["combines"] = [
@@ -303,8 +328,11 @@ def language_browser(lang):
         return flask.render_template('language_browser_entry.html',
                                      languages=languages)
     offset = flask.request.args.get('from', default=0, type=int)
+    sense = flask.request.args.get('sense', default='all', type=str)
+    if sense not in ["true", "false"]:
+        sense = "all"
     limit = 100
-    words = get_words_in_language(lang, offset, limit)
+    words = get_words_in_language(lang, sense, offset, limit)
     navigation = {}
     if offset > limit:
         navigation["previous"] = offset - limit
@@ -315,7 +343,8 @@ def language_browser(lang):
     navigation["next"] = offset + limit
     return flask.render_template('language_browser.html',
                                  words=words, navigation=navigation,
-                                 lang=lang, languages=languages)
+                                 lang=lang, languages=languages,
+                                 sense=sense)
 
 
 @app.route('/autocomplete')
@@ -325,6 +354,66 @@ def autocomplete():
     options = run_sparql(get_query("get_lemmas_starting_with") %
                          (language, searchfor))
     return flask.jsonify([x["label"]["value"] for x in options])
+
+
+def build_sense_to_add(content, lang):
+    return {"senses": [{"add": "", "glosses": {
+        lang: {"language": lang, "value": content}}}]}
+
+
+def submit_lexeme(lid, senses, lang):
+    host = 'https://www.wikidata.org'
+    session = mwapi.Session(
+        host=host,
+        auth=generate_auth(),
+        user_agent=user_agent,
+    )
+    summary = edit_summary("Added sense: {}.".format(
+        senses["senses"][0]["glosses"][lang]["value"]))
+    token = session.get(action='query', meta='tokens')[
+        'query']['tokens']['csrftoken']
+    session.post(
+        action='wbeditentity',
+        data=json.dumps(senses),
+        summary=summary,
+        token=token,
+        id=lid
+    )
+
+
+def edit_summary(content):
+    return "{} {}".format(content, HASHTAG)
+
+
+def add_new_sense():
+    token = flask.session.pop('csrf_token', None)
+    req_data = json.loads(flask.request.data)
+    if (not token or
+        token != req_data.get('token') or
+            not flask.request.referrer.startswith(full_url('index'))):
+        flask.g.csrf_error = True
+        flask.g.repeat_form = True
+        return None
+
+    if 'oauth' in app.config:
+        content = req_data.get("content")
+        lid = req_data.get("lid")
+        lang = req_data.get("lang")
+        senses = build_sense_to_add(content, lang)
+        submit_lexeme(lid, senses, lang)
+        return None
+    else:
+        return flask.jsonify(senses)
+
+
+@app.route('/edit/<lid>', methods=['GET', 'POST'])
+def edit(lid):
+    if flask.request.method == 'POST':
+        response = add_new_sense()
+        if response:
+            return response
+        else:
+            return flask.jsonify({"Status": "OK"})
 
 
 @app.route('/login')
@@ -397,3 +486,13 @@ def deny_frame(response: flask.Response) -> flask.Response:
     """
     response.headers['X-Frame-Options'] = 'deny'
     return response
+
+
+def generate_auth():
+    access_token = mwoauth.AccessToken(**flask.session['oauth_access_token'])
+    return requests_oauthlib.OAuth1(
+        client_key=consumer_token.key,
+        client_secret=consumer_token.secret,
+        resource_owner_key=access_token.key,
+        resource_owner_secret=access_token.secret,
+    )

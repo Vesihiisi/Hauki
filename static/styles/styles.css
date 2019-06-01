@@ -21,6 +21,10 @@
     padding: 0;
 }
 
+.navbar-text {
+  color: lightgray;
+}
+
 .top_info h1 {
     text-align: center;
     font-size: 275%;
@@ -143,6 +147,11 @@
     background-color: #7f4762;
 }
 
+.filter_bar {
+  background-color: #eaeff2;
+  padding: 0.5em 0.25em 0.5em 0.25em;
+}
+
 .three-columns {
     column-count: 3;
 }
@@ -155,4 +164,23 @@ footer {
 
 footer p {
     margin-bottom: 0.3em;
+}
+
+.addSenseField {
+    border: 0;
+    outline: 0;
+    background-color: #f7f7f7;
+    width: 70%;
+    border-bottom: 1px solid #e2e2e2;
+    border-radius: 6px;
+    padding: 0.5em 0.25em 0.5em 0.25em;
+}
+
+
+.alert {
+  margin: 0.5em 0 0.5em 0;
+}
+
+.edit-form .btn {
+  margin: 0.25em;
 }
