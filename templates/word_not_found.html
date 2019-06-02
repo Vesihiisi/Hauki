@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block main %}
+{% include "search_bar.html" %}
+<h2>Lexeme not found</h2>
+<p><em><strong>{{ word }}</strong></em> ({{ lang }}) could not be found on Wikidata.</p>
+{% endblock %}

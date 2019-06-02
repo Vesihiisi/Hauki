@@ -305,11 +305,18 @@ def page_not_found(e):
     return flask.redirect(flask.url_for('index'))
 
 
+def show_word_not_found(lang, word):
+    languages = run_sparql(get_query("get_all_languages"))
+    return flask.render_template('word_not_found.html',
+                                 word=word, lang=lang,
+                                 languages=languages)
+
+
 @app.route('/lex/<lang>/<word>')
 def display(lang, word):
     lexeme_ids = get_lexeme_id(lang, word)
     if not lexeme_ids:
-        flask.abort(404)
+        return show_word_not_found(lang, word)
     to_display = []
     for lexid in lexeme_ids:
         word = get_word(lexid)
