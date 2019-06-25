@@ -74,20 +74,6 @@ BIND(str(YEAR(?publDate)) AS ?note)
 }
 UNION
 {
-BIND("Gloss" AS ?description)
-?lexeme ontolex:sense ?sense .
-?sense skos:definition ?gloss .
-OPTIONAL {
-?sense wdt:P6191 ?style.
-?style rdfs:label ?styleLabel .
-FILTER (LANG(?styleLabel) = 'en')
-BIND (?styleLabel as ?note)
-}
-BIND(SUBSTR(STR(?sense), 32) AS ?value_Url)
-BIND(?gloss AS ?valueLabel) 
-}
-UNION
-{
 BIND("Combines" AS ?description)
 OPTIONAL {
 ?lexeme wdt:P5238 ?value .
