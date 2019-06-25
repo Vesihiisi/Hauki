@@ -6,6 +6,7 @@ import mwapi  # type: ignore
 import mwoauth  # type: ignore
 import os
 import random
+import requests
 import requests_oauthlib  # type: ignore
 import string
 import toolforge
@@ -16,6 +17,8 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 QUERIES = "queries"
 HASHTAG = "#Hauki"
+LABELLANG = "en"
+LABELCACHE = {}
 
 sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
 
@@ -149,6 +152,26 @@ def index() -> str:
     return flask.render_template('index.html', languages=languages)
 
 
+def get_label(qid):
+    if LABELCACHE.get(qid):
+        return LABELCACHE[qid]
+    else:
+        params = {
+            'action': 'wbgetentities',
+            'format': 'json',
+            'ids': qid, }
+        response_data = requests.get(
+            'https://www.wikidata.org/w/api.php',
+            params=params).json()
+        data = response_data["entities"][qid]
+        if data["labels"].get(LABELLANG):
+            value = data["labels"][LABELLANG]["value"]
+        else:
+            value = qid
+        LABELCACHE[qid] = value
+        return value
+
+
 def get_words_in_language(lang, sense, offset=0, limit=100):
     if sense == "false":
         query = get_query("get_words_in_language_without_senses") % (
@@ -162,9 +185,22 @@ def get_words_in_language(lang, sense, offset=0, limit=100):
     return [x["lemma"]["value"] for x in results]
 
 
+def get_lexeme_data_from_api(lid):
+    params = {
+        'action': 'wbgetentities',
+        'format': 'json',
+        'ids': lid, }
+    response_data = requests.get(
+        'https://www.wikidata.org/w/api.php',
+        params=params).json()
+    return response_data["entities"][lid]
+
+
 def get_word(lexeme_id):
+    base_data = get_lexeme_data_from_api(lexeme_id)
     query = get_query("lexeme_data") % (lexeme_id, lexeme_id, lexeme_id)
-    return run_sparql(query)
+    query_results = run_sparql(query)
+    return {"api_data": base_data, "query_data": query_results}
 
 
 def show_word_page(words, lang, languages):
@@ -174,20 +210,20 @@ def show_word_page(words, lang, languages):
                                  authenticated=authenticated_session())
 
 
-def construct_glosses(lang, raw_word):
+def construct_glosses(lang, query_data, api_data):
     glosses = []
     raw_glosses = [x
-                   for x in raw_word
-                   if x["description"]["value"] == "Gloss" and
-                   x["value_"]["xml:lang"] == lang]
+                   for x in api_data["senses"]
+                   if x["glosses"].get(lang) and
+                   x["glosses"][lang]["language"] == lang]
     raw_examples = [x
-                    for x in raw_word
+                    for x in query_data
                     if x["description"]["value"] == "Usage example"]
 
     for raw_gloss in raw_glosses:
         gloss = {"id": "", "gloss": "", "examples": []}
-        gloss["id"] = raw_gloss["value_Url"]["value"]
-        gloss["gloss"] = raw_gloss["value_"]["value"]
+        gloss["id"] = raw_gloss["id"]
+        gloss["gloss"] = raw_gloss["glosses"][lang]["value"]
         if raw_gloss.get("note"):
             gloss["notes"] = raw_gloss["note"]["value"]
         examples = [x for x in raw_examples if
@@ -226,14 +262,15 @@ def construct_examples(raw_word):
     return examples
 
 
-def construct_forms(raw_forms):
+def construct_forms(lang, api_data):
     forms = []
+    raw_forms = api_data["forms"]
     for raw_form in raw_forms:
         form = {"id": "", "value": "", "features": []}
-        form["id"] = raw_form["form"]["value"].split("/")[-1]
-        form["value"] = raw_form["formLabel"]["value"]
+        form["id"] = raw_form["id"]
+        form["value"] = raw_form["representations"][lang]["value"]
         form["features"] = sorted([
-            x for x in raw_form["features"]["value"].split("|") if x != ""])
+            get_label(x) for x in raw_form["grammaticalFeatures"]])
         forms.append(form)
     return forms
 
@@ -253,36 +290,35 @@ def construct_pos(raw_word):
 
 
 def construct_word(lang, raw_word, word_forms, l_id):
+    query_data = raw_word["query_data"]
+    api_data = raw_word["api_data"]
     word = {"lemma": "", "pos": "", "gender": "", "language": "",
             "glosses": [], "examples": [], "id": ""}
-    word["lemma"] = [x["value_"]["value"]
-                     for x in raw_word
-                     if x["description"]["value"] == "Lemma"][0]
-    word["examples"] = construct_examples(raw_word)
-    word["glosses"] = construct_glosses(lang, raw_word)
+    word["lemma"] = api_data["lemmas"][lang]["value"]
+    word["examples"] = construct_examples(query_data)
+    word["glosses"] = construct_glosses(lang, query_data, api_data)
     word["id"] = l_id
-    word["language"] = [x["value_"]["value"] for x in raw_word if x["description"]
-                        ["value"] == "Language"][0]
-    word["pos"] = construct_pos(raw_word)
-    word["forms"] = construct_forms(word_forms)
+    word["pos"] = construct_pos(query_data)
+    word["forms"] = construct_forms(lang, api_data)
+    word["language"] = get_label(raw_word["api_data"]["language"])
     word["combines"] = [
-        x for x in raw_word
+        x for x in query_data
         if x["description"]["value"] == "Combines" and
         x.get("value_")]
     word["compounds"] = [
-        x["value_"]["value"] for x in raw_word
+        x["value_"]["value"] for x in query_data
         if x["description"]["value"] == "In compound"
     ]
     word["derived_from"] = [x["value_"]["value"]
-                            for x in raw_word if
+                            for x in query_data if
                             x["description"]["value"] == "Derived from" and
                             x.get("value_")]
     word["derivations"] = [x["value_"]["value"]
-                           for x in raw_word if
+                           for x in query_data if
                            x["description"]["value"] == "Derivations" and
                            x.get("value_")]
     word["gender"] = [x["value_"]["value"]
-                      for x in raw_word if
+                      for x in query_data if
                       x["description"]["value"] == "Grammatical gender" and
                       x.get("value_")]
     word["forms_template"] = "forms_{}_{}".format(lang, word["pos"])
@@ -292,7 +328,21 @@ def construct_word(lang, raw_word, word_forms, l_id):
 def get_lexeme_id(lang, word):
     query = get_query("get_lexeme_id_from_lemma") % (lang, word)
     results = run_sparql(query)
-    return [x["l"]["value"].split("/")[-1] for x in results]
+    params = {
+        'action': 'wbsearchentities',
+        'format': 'json',
+        'search': word,
+        'language': lang,
+        'type': 'lexeme',
+    }
+    response = requests.get(
+        'https://www.wikidata.org/w/api.php', params=params).json()
+    if response.get("search"):
+        return [x["id"] for x in response["search"]
+                if x["label"] == word and
+                x["match"]["language"] == lang]
+    else:
+        return []
 
 
 def get_word_forms(lexid):
