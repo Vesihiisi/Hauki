@@ -127,6 +127,78 @@ $(document).ready(function() {
             &times;</span></button></div>');
     }
 
+    $(".addLexemeField").keypress(function(e) {
+        if (e.which == 13 && $(this).val()) {
+            e.preventDefault()
+            $('.add-lexeme-button').click();
+        }
+    });
+
+    $(".addLexemeField").on('input', function() {
+        var thisForm = $(this).parent('form');
+        var lemma = $(this).val();
+        var lang = $("#lang-selector option:selected").attr('data-lang');
+        $(".alert").remove();
+        if (lemma.length > 1) {
+            url = $SCRIPT_ROOT + '/get_duplicates/' + lang + "/" + lemma,
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    success: function(data) {
+                        if (data) {
+                            $(".alert").remove();
+                            data = JSON.parse(data)
+                            var info = "<strong><a href='" + $SCRIPT_ROOT + "/lex/" + lang + "/" + data[0]["label"] + "'>" + data[0]["label"] + "</a></strong> already exists: "
+
+                            for (i = 0; i < data.length; ++i) {
+                                info = info + "[<a href='" + data[i].uri + "' target=_blank>" + data[i].id + "</a>] "
+                            }
+                            var infoMessage = createAlert("info", info);
+                            thisForm.after(infoMessage);
+
+                        }
+                    }
+                });
+        }
+
+    });
+
+
+    $('.add-lexeme-button').click(function() {
+        var lastAddedList = $("#recently-created-list");
+        var addLexemeButton = $(this);
+        var addLexemeField = $(".addLexemeField");
+        var thisForm = $(this).parent('form');
+        var newLemma = addLexemeField.val().trim();
+        var pos = $("#pos-selector option:selected").attr('data-code')
+        var lang = $("#lang-selector option:selected").attr('data-lang')
+        if (newLemma.length > 1) {
+            lex_data = JSON.stringify({
+                "what": "new",
+                "lang": lang,
+                "content": newLemma,
+                "pos": pos,
+                "lid": null,
+                "token": getToken($(this))
+            })
+            $.ajax({
+                url: $SCRIPT_ROOT + '/edit',
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: lex_data,
+                success: function(data) {
+                    l_id = data["entity"]["id"];
+                    lastAddedList.prepend("<li><a href='https://www.wikidata.org/wiki/Lexeme:" + l_id + "' \
+                            target='_blank'>" + newLemma + "</a></li>");
+                }
+            });
+            addLexemeField.val("");
+            addLexemeField.focus();
+        }
+    })
+
+
     function createButton(type, text) {
         return $("<button type='button' class='btn \
             btn-" + type + "'>" + text + "</button>")
@@ -147,7 +219,7 @@ $(document).ready(function() {
             infoMessage.remove();
             addSenseButton.html('Add a sense!');
         })
-        var infoMessage = createAlert("info", "Add a sense in <strong> " + language + "</strong>." )
+        var infoMessage = createAlert("info", "Add a sense in <strong> " + language + "</strong>.")
         thisForm.append(infoMessage)
         if ($(".addSenseField").length === 0) {
             var senseInput = createSenseInput()
