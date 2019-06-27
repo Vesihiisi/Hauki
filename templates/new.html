@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>New Lexeme</h1>
+    <form method="post" class="edit-form form-inline justify-content-center">
+        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+                <select class="form-control" id="lang-selector">
+            {% for l in langs %}
+            <option data-lang = {{ l.code }} data-code="{{ l.id }}" {% if lang == l.code %} selected {% endif %}>{{ l.label }}</option>
+            {% endfor %}
+        </select>
+        <select class="form-control" id="pos-selector">
+            {% for p in pos %}
+            <option data-code="{{ p.id }}">{{ p.label }}</option>
+            {% endfor %}
+        </select>
+        <input name="lemma" type="text" autocomplete="off" class="addLexemeField" autofocus="autofocus">
+        <button type="button" class="btn btn-primary add-lexeme-button">Save</button>
+    </form>
+    <div id="recently-created-box"><h2>Recently created</h2>
+    <ul id="recently-created-list">
+    </ul>
+</div>
+{% endblock %}
