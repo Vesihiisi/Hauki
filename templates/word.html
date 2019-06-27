@@ -45,8 +45,7 @@
                                 {% endfor %}</ul>
                             {% endif %}
                             
-                            <h3>Forms</h3>
-                            <h4>Tagged forms</h4><ul>
+                            <h3>Forms</h3><ul>
                                 {% for form in word.forms %}
                                     {% if form.features|length > 0 %}
                                         <li><span class="features">
@@ -54,14 +53,13 @@
                                                 {{ feature }}{% if not loop.last %}, {% endif %}
                                             {% endfor %}:</span> {{ form.value }}</li>
                                         {% endif %}
-                                    {% endfor %}</ul>
-                                    <h4>Untagged forms</h4>
+                                    {% endfor %}</ul><ul>
                                     {% for form in word.forms %}
                                         {% if form.features|length == 0 %}
                                             <li>{{ form.value }}</li>
                                         {% endif %}
                                     {% endfor %}
-                                </div>
+                                </ul></div>
                                 <div class="col meat">
                                     <h3>Senses</h3><form method="post" class="edit-form">
                                         <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
