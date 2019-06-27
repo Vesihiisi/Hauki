@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import flask
 import json
 import mwapi  # type: ignore
@@ -10,12 +9,14 @@ import requests
 import requests_oauthlib  # type: ignore
 import string
 import toolforge
-from typing import Optional
 import werkzeug
 import yaml
 from SPARQLWrapper import SPARQLWrapper, JSON
+from typing import Optional
 
+APIURL = "https://www.wikidata.org/w/api.php"
 QUERIES = "queries"
+MAPPINGS = "mappings"
 HASHTAG = "#Hauki"
 LABELLANG = "en"
 LABELCACHE = {}
@@ -161,7 +162,7 @@ def get_label(qid):
             'format': 'json',
             'ids': qid, }
         response_data = requests.get(
-            'https://www.wikidata.org/w/api.php',
+            APIURL,
             params=params).json()
         data = response_data["entities"][qid]
         if data["labels"].get(LABELLANG):
@@ -190,9 +191,7 @@ def get_lexeme_data_from_api(lid):
         'action': 'wbgetentities',
         'format': 'json',
         'ids': lid, }
-    response_data = requests.get(
-        'https://www.wikidata.org/w/api.php',
-        params=params).json()
+    response_data = requests.get(APIURL, params=params).json()
     return response_data["entities"][lid]
 
 
@@ -201,6 +200,21 @@ def get_word(lexeme_id):
     query = get_query("lexeme_data") % (lexeme_id, lexeme_id, lexeme_id)
     query_results = run_sparql(query)
     return {"api_data": base_data, "query_data": query_results}
+
+
+def show_new_lexeme_page(lang):
+    with open(os.path.join(MAPPINGS, "pos.json")) as json_file:
+        data = json.load(json_file).get("pos")
+        pos = [{"id": x, "label": get_label(x)} for x in data]
+        pos = sorted(pos, key=lambda k: k['label'])
+    with open(os.path.join(MAPPINGS, "languages.json")) as json_file:
+        data = json.load(json_file)
+        langs = [{"code": data[x]["code"],
+                  "id": data[x]["id"],
+                  "label": get_label(
+            data[x]["id"])} for x in data]
+        langs = sorted(langs, key=lambda k: k['label'])
+    return flask.render_template('new.html', pos=pos, lang=lang, langs=langs)
 
 
 def show_word_page(words, lang, languages):
@@ -326,8 +340,6 @@ def construct_word(lang, raw_word, word_forms, l_id):
 
 
 def get_lexeme_id(lang, word):
-    query = get_query("get_lexeme_id_from_lemma") % (lang, word)
-    results = run_sparql(query)
     params = {
         'action': 'wbsearchentities',
         'format': 'json',
@@ -335,8 +347,7 @@ def get_lexeme_id(lang, word):
         'language': lang,
         'type': 'lexeme',
     }
-    response = requests.get(
-        'https://www.wikidata.org/w/api.php', params=params).json()
+    response = requests.get(APIURL, params=params).json()
     if response.get("search"):
         return [x["id"] for x in response["search"]
                 if x["label"] == word and
@@ -360,6 +371,21 @@ def show_word_not_found(lang, word):
     return flask.render_template('word_not_found.html',
                                  word=word, lang=lang,
                                  languages=languages)
+
+
+@app.route('/new', defaults={'lang': LABELLANG})
+@app.route('/new/<lang>')
+def new(lang):
+    valid_language = False
+    with open(os.path.join(MAPPINGS, "languages.json")) as json_file:
+        data = json.load(json_file)
+        valid_language = data.get(lang)
+    if authenticated_session():
+        if not valid_language:
+            lang = LABELLANG
+        return show_new_lexeme_page(lang)
+    else:
+        return flask.redirect(flask.url_for('login'))
 
 
 @app.route('/lex/<lang>/<word>')
@@ -442,6 +468,54 @@ def edit_summary(content):
     return "{} {}".format(content, HASHTAG)
 
 
+def create_new_lexeme():
+    token = flask.session.get('csrf_token')
+    req_data = json.loads(flask.request.data.decode())
+    if (not token or
+        token != req_data.get('token') or
+            not flask.request.referrer.startswith(full_url('index'))):
+        flask.g.csrf_error = True
+        flask.g.repeat_form = True
+        return None
+
+    if 'oauth' in app.config:
+        content = req_data.get("content")
+        lang = req_data.get("lang")
+        with open(os.path.join(MAPPINGS, "languages.json")) as json_file:
+            langdata = json.load(json_file)
+            language = langdata[lang]["id"]
+        lexeme_data = {
+            'type': 'lexeme',
+            'lemmas': {lang: {'language': lang, 'value': content}},
+            'language': language,
+            'lexicalCategory': req_data.get("pos"),
+            'forms': [{
+                'add': '',
+                'representations': {lang: {'language': lang,
+                                           'value': content}},
+                'grammaticalFeatures': [],
+                'claims': []
+            }]
+        }
+        host = 'https://www.wikidata.org'
+        session = mwapi.Session(
+            host=host,
+            auth=generate_auth(),
+            user_agent=user_agent,
+        )
+        summary = edit_summary("[{}] {}".format(lang, content))
+        token = session.get(action='query', meta='tokens')[
+            'query']['tokens']['csrftoken']
+        response = session.post(
+            action='wbeditentity',
+            new='lexeme',
+            data=json.dumps(lexeme_data),
+            summary=summary,
+            token=token,
+        )
+        return response
+
+
 def add_new_sense():
     token = flask.session.pop('csrf_token', None)
     req_data = json.loads(flask.request.data.decode())
@@ -463,14 +537,28 @@ def add_new_sense():
         return flask.jsonify(senses)
 
 
+@app.route('/get_duplicates/<lang>/<lemma>', methods=['GET'])
+def get_duplicates(lang, lemma):
+    dup_url = ("https://tools.wmflabs.org/lexeme-forms"
+               "/api/v1/duplicates/www/{}/{}")
+    dup_url = dup_url.format(lang, lemma)
+    r = requests.get(dup_url, headers={'Accept': 'application/json'})
+    return flask.jsonify(r.text)
+
+
+@app.route('/edit', defaults={'lid': None}, methods=['GET', 'POST'])
 @app.route('/edit/<lid>', methods=['GET', 'POST'])
 def edit(lid):
     if flask.request.method == 'POST':
-        response = add_new_sense()
+        request_data = json.loads(flask.request.data.decode())
+        if request_data.get("what") == "new":
+            response = create_new_lexeme()
+        elif request_data.get("what") == "sense":
+            response = add_new_sense()
         if response:
-            return response
+            return flask.jsonify(response)
         else:
-            return flask.jsonify({"Status": "OK"})
+            return flask.jsonify({})
 
 
 @app.route('/login')

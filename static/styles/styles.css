@@ -184,3 +184,9 @@ footer p {
 .edit-form .btn {
   margin: 0.25em;
 }
+
+#recently-created-box {
+  margin-top: 1em;
+  overflow-y: auto;
+  max-height: 500px;
+}
