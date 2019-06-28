@@ -21,13 +21,14 @@ HASHTAG = "#Hauki"
 LABELLANG = "en"
 LABELCACHE = {}
 
-sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
-
-app = flask.Flask(__name__)
-
 user_agent = toolforge.set_user_agent(
     'hauki',
     email='alicia@fagerving.se')
+
+sparql = SPARQLWrapper("https://query.wikidata.org/sparql", agent=user_agent)
+
+app = flask.Flask(__name__)
+
 
 __dir__ = os.path.dirname(__file__)
 try:
