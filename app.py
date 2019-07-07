@@ -490,13 +490,7 @@ def create_new_lexeme():
             'lemmas': {lang: {'language': lang, 'value': content}},
             'language': language,
             'lexicalCategory': req_data.get("pos"),
-            'forms': [{
-                'add': '',
-                'representations': {lang: {'language': lang,
-                                           'value': content}},
-                'grammaticalFeatures': [],
-                'claims': []
-            }]
+            'forms': []
         }
         host = 'https://www.wikidata.org'
         session = mwapi.Session(
